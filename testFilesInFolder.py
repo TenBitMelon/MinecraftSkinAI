@@ -19,7 +19,8 @@ output_folder = "./skins"
 # model = keras.models.load_model("The Rembrandt_image_conversion_model.h5") trash
 # model = keras.models.load_model("The Van Gogh_image_conversion_model.h5") + best
 # model = keras.models.load_model("The Warhol_image_conversion_model.h5")
-model = keras.models.load_model("The Van Gogh Ultima_image_conversion_model.h5")
+# model = keras.models.load_model("The Van Gogh Ultima_image_conversion_model.h5")
+model = keras.models.load_model("The_Van_Gogh_Enigma_image_conversion_model.h5")
 
 # Get the list of files in the testing folder
 filenames = os.listdir(testing_folder)
@@ -62,8 +63,13 @@ for i, filename in enumerate(filenames):
     input_image = np.array(image) / 255.0
     input_image = np.expand_dims(input_image, axis=0)
 
-    # Generate the output image using the model
-    output_image = model.predict(input_image)
+    output_image = input_image
+
+    # Loop the image through the model
+    for _ in range(1):
+        # Generate the output image using the model
+        output_image = model.predict(output_image)
+
     output_image = np.squeeze(output_image, axis=0)
 
     # Clamp the alpha channel to be either 0 or 1

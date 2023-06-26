@@ -61,11 +61,15 @@ def process_image(filename):
 
         combined_alpha = ImageChops.darker(original_alpha, alpha_mask)
 
-        converted_image = expand_until_solid(image).filter(ImageFilter.GaussianBlur(radius=2))
+        original_palette = image.getpalette()
+        converted_image = expand_until_solid(image)
+        converted_image = converted_image.filter(ImageFilter.GaussianBlur(radius=2))
         num_colors = random.randint(2, 5)
-        converted_image = converted_image.quantize(colors=num_colors, method=2, kmeans=4).convert("RGBA")
+        converted_image = converted_image.quantize(palette=original_palette)
+        converted_image = converted_image.quantize(colors=num_colors)
+        converted_image = converted_image.convert("RGBA")
 
-        # converted_image = Image.alpha_composite(image, converted_image)
+        converted_image = Image.alpha_composite(image, converted_image)
         converted_image.putalpha(combined_alpha)
 
         output_path = os.path.join(output_dir, filename)
@@ -75,6 +79,7 @@ def process_image(filename):
 
 if __name__ == "__main__":
     image_files = os.listdir(dataset_dir)
+    # image_files = image_files[:1000]
 
     pool = multiprocessing.Pool()
 

@@ -13,7 +13,6 @@ output_folder = "./downloadedskins"
 # Set the image size
 image_size = (64, 64)
 
-# Load a single image
 def load_image(filename, input_folder, output_folder):
     input_path = os.path.join(input_folder, filename)
     output_path = os.path.join(output_folder, filename)
@@ -21,61 +20,54 @@ def load_image(filename, input_folder, output_folder):
     output_image = Image.open(output_path)
     return np.array(input_image) / 255.0, np.array(output_image) / 255.0
 
+# Generator function to load images in batches
+def image_generator(filenames, input_folder, output_folder, batch_size):
+    for filename in filenames:
+        input_image, output_image = load_image(filename, input_folder, output_folder)
+        yield input_image, output_image
+
 # Load the dataset using multiprocessing
-def load_dataset(input_folder, output_folder):
+def load_dataset(input_folder, output_folder, batch_size):
     filenames = os.listdir(input_folder)
     num_images = len(filenames)
     print(f"Total images: {num_images}")
+
+    dataset = tf.data.Dataset.from_generator(
+        lambda: image_generator(filenames, input_folder, output_folder, batch_size),
+        output_signature=(
+            tf.TensorSpec(shape=(image_size[0], image_size[1], 4), dtype=tf.float32),
+            tf.TensorSpec(shape=(image_size[0], image_size[1], 4), dtype=tf.float32),
+        )
+    )
     
-    pool = multiprocessing.Pool()
-    results = []
-    for filename in filenames:
-        if len(results) > 50000:
-            break
-        result = pool.apply_async(load_image, args=(filename, input_folder, output_folder))
-        results.append(result)
-    
-    input_images = []
-    output_images = []
-    loaded_count = 0
-    for result in results:
-        input_image, output_image = result.get()
-        input_images.append(input_image)
-        output_images.append(output_image)
-        loaded_count += 1
-        if loaded_count % 1000 == 0:
-            print(f"Loaded {loaded_count} images")
-    
-    pool.close()
-    pool.join()
-    
-    return np.array(input_images), np.array(output_images)
+    return num_images, dataset
 
 if __name__ == "__main__":
     # Set the GPU memory growth to true
     physical_devices = tf.config.list_physical_devices("GPU")
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+    # Enable mixed precision training
+    tf.keras.mixed_precision.set_global_policy("mixed_float16")
+
     # Load the dataset
     start_time_db = time.time()
     print("Loading dataset...")
-    input_images, output_images = load_dataset(input_folder, output_folder)
+    batch_size = 32
+    num_loaded_images, dataset = load_dataset(input_folder, output_folder, batch_size)
+    dataset = dataset.shuffle(buffer_size=1024).batch(batch_size).repeat().prefetch(1)
+    
+    input_images, output_images = next(iter(dataset))
     print(f"Loaded {len(input_images)} images.")
-
-    # Shape the images
     print(f"Shape of array: {input_images.shape}")
-
-    # Create efficient input and output datasets
-
-    # batch_size = 32
-    # dataset = tf.data.Dataset.from_tensor_slices((input_images, output_images))
-    # dataset = dataset.shuffle(buffer_size=1024).batch(batch_size).repeat().prefetch(1)
     print("Dataset loaded.")
+    
     end_time_db = time.time()
     print(f"Loading dataset took {end_time_db - start_time_db} seconds.")
 
     # Use the GPU
-    with tf.device("/GPU:0"):
+    with tf.device("/GPU:0"), tf.distribute.OneDeviceStrategy("/GPU:0").scope():
+        
         
         # Create the model
         models = [
@@ -114,15 +106,34 @@ if __name__ == "__main__":
                 ],
                 "optimizer": "adam",
                 "loss": "mean_squared_error",
+                # "loss": "categorical_crossentropy",
             },
+            {
+                "name": "The_Van_Gogh_Optimistic", # Diffusion based model done by using a more complex model
+                "layers": [
+                    keras.layers.Input(shape=(image_size[0], image_size[1], 4)),
+                ],
+            }
         ]
 
         for model_config in models:
             start_time_train = time.time()
             print(f"Training {model_config['name']}...")
-            model = keras.Sequential(model_config["layers"])
-            model.compile(optimizer=model_config["optimizer"], loss=model_config["loss"], metrics=["accuracy"])
-            model.fit(input_images, output_images, epochs=100, batch_size=16)
+
+            model = tf.keras.models.load_model(f"{model_config['name']}_image_conversion_model.h5")
+
+            if model is None:
+                model = keras.Sequential(model_config["layers"])
+                model.compile(optimizer=model_config["optimizer"], loss=model_config["loss"], metrics=["accuracy", "mean_squared_error"])
+
+            callbacks = [
+                keras.callbacks.ModelCheckpoint(f"{model_config['name']}_checkpoint.h5", save_best_only=True, monitor="loss"),
+                keras.callbacks.EarlyStopping(monitor="loss", patience=10),
+            ]
+
+            history = model.fit(dataset, epochs=110, steps_per_epoch=num_loaded_images // batch_size, callbacks=callbacks)
+
+            # history = model.fit(dataset, epochs=100, steps_per_epoch=num_loaded_images // batch_size, callbacks=callbacks, validation_split=validation_split, validation_steps=validation_steps)
 
             end_time_train = time.time()
             print(f"Training {model_config['name']} took {end_time_train - start_time_train} seconds.")
@@ -132,7 +143,7 @@ if __name__ == "__main__":
             model.save(f"{model_config['name']}_image_conversion_model.h5")
 
             print(f"Evaluating {model_config['name']}...")
-            test_loss, test_accuracy = model.evaluate(input_images, output_images)
+            test_loss, test_accuracy = model.evaluate(dataset, steps=1)
             print(f"{model_config['name']} - Test Loss: {test_loss}, Test Accuracy: {test_accuracy}")
 
 
