@@ -6,10 +6,13 @@ import random
 dataset_dir = "./downloadedskins"
 output_dir = "./preppedskins"
 alpha_mask_path = "./skinmask.png"
+alpha_mask_no_layer_path = "./skinmask-nolayer.png"
+multiple_images = True # Make only one image per skin (false) or generate multiple images per skin (true)
 
 os.makedirs(output_dir, exist_ok=True)
 
-alpha_mask = Image.open(alpha_mask_path).convert("L")
+# Load the alpha mask
+alpha_mask = Image.open(multiple_images and alpha_mask_no_layer_path or alpha_mask_path).convert("L")
 alpha_mask = alpha_mask.resize((64, 64))
 
 def expand_solid_regions(image):
@@ -56,24 +59,54 @@ def process_image(filename):
             os.remove(image_path)
             return
 
+        # Get the original alpha channel and convert it to a mask
         original_alpha = image.getchannel("A")
         original_alpha = original_alpha.point(lambda p: 0 if p < 200 else 255, mode="L")
 
+        # Combine the original alpha channel with the blank skin mask
         combined_alpha = ImageChops.darker(original_alpha, alpha_mask)
 
-        original_palette = image.getpalette()
-        converted_image = expand_until_solid(image)
-        converted_image = converted_image.filter(ImageFilter.GaussianBlur(radius=2))
-        num_colors = random.randint(2, 5)
-        converted_image = converted_image.quantize(palette=original_palette)
-        converted_image = converted_image.quantize(colors=num_colors)
-        converted_image = converted_image.convert("RGBA")
+        if not multiple_images:
+            converted_image = expand_until_solid(image)
+            converted_image = converted_image.filter(ImageFilter.GaussianBlur(radius=2))
+            num_colors = random.randint(2, 5)
+            converted_image = converted_image.quantize(colors=num_colors)
+            converted_image = converted_image.convert("RGBA")
 
-        converted_image = Image.alpha_composite(image, converted_image)
-        converted_image.putalpha(combined_alpha)
+            converted_image = Image.alpha_composite(image, converted_image)
+            converted_image.putalpha(combined_alpha)
 
-        output_path = os.path.join(output_dir, filename)
-        converted_image.save(output_path)
+            output_path = os.path.join(output_dir, filename)
+            converted_image.save(output_path)
+        else:
+            converted_image = image
+            converted_image.putalpha(combined_alpha)
+            converted_image = expand_until_solid(converted_image)
+
+            blur_values = [0, 2, 4]
+            color_values = [2, 3, 4, 5]
+            for blur in blur_values:
+                # Blur the image
+                blur_image = converted_image.filter(ImageFilter.GaussianBlur(radius=blur))
+                for color in color_values:
+                    # Quantize the image
+                    colored_image = blur_image.quantize(colors=color).convert("RGBA")
+                    # Blur the image again
+                    blur_color_image = colored_image.filter(ImageFilter.GaussianBlur(radius=2))
+
+                    colored_image.putalpha(combined_alpha)
+                    blur_color_image.putalpha(combined_alpha)
+
+                    # Save the image
+                    snipped_filename = filename[:-4]
+
+                    new_filename = snipped_filename + f"_b{blur}_c{color}.png"
+                    output_path = os.path.join(output_dir, new_filename)
+                    colored_image.save(output_path)
+
+                    new_filename = snipped_filename + f"_b{blur}_c{color}_b.png"
+                    output_path = os.path.join(output_dir, new_filename)
+                    blur_color_image.save(output_path)
 
         return 1
 
@@ -83,13 +116,12 @@ if __name__ == "__main__":
 
     pool = multiprocessing.Pool()
 
-    results = pool.map(process_image, image_files)
-    pool.close()
-    pool.join()
-
     processed_count = 0
-    for result in results:
+    for result in pool.map(process_image, image_files):
         if result is not None:
             processed_count += 1
             if processed_count % 1000 == 0:
-                print(f"Processed image {processed_count}")
+                print(f"Processed {processed_count} images")
+
+    pool.close()
+    pool.join()
