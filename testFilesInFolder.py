@@ -8,7 +8,7 @@ from tkinter import PhotoImage, Label, Scrollbar, Canvas, Frame
 
 testing_folder = "./preppedskins"
 # amounttesting = len(os.listdir(testing_folder))
-amounttesting = 50
+amounttesting = 150
 output_folder = "./skins"
 
 # Load the saved model
@@ -21,7 +21,7 @@ output_folder = "./skins"
 # model = keras.models.load_model("The Warhol_image_conversion_model.h5")
 # model = keras.models.load_model("The Van Gogh Ultima_image_conversion_model.h5")
 # model = keras.models.load_model("The_Van_Gogh_Enigma_image_conversion_model.h5")
-model = keras.models.load_model("The_Van_Gogh_Optimistic_image_conversion_model.h5")
+model = keras.models.load_model("oldmodels/The_Van_Gogh_Optimistic_image_conversion_model.h5")
 
 # Get the list of files in the testing folder
 filenames = os.listdir(testing_folder)
