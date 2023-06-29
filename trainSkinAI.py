@@ -7,7 +7,7 @@ import time
 
 # Set the paths to your input and output image folders
 input_folder = "./preppedskins"
-output_folder = "./downloadedskins"
+output_folder = "./downloadedskins/skins"
 expect_multiple_images = True # Set this to true if you expect multiple input images for each output image
 
 # Set the image size

@@ -8,7 +8,7 @@ from tkinter import PhotoImage, Label, Scrollbar, Canvas, Frame
 
 testing_folder = "./preppedskins"
 # amounttesting = len(os.listdir(testing_folder))
-amounttesting = 500
+amounttesting = 50
 output_folder = "./skins"
 
 # Load the saved model

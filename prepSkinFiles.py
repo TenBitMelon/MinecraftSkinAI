@@ -3,7 +3,7 @@ import os
 import multiprocessing
 import random
 
-dataset_dir = "./downloadedskins"
+dataset_dir = "./downloadedskins/skins"
 output_dir = "./preppedskins"
 alpha_mask_path = "./skinmask.png"
 alpha_mask_no_layer_path = "./skinmask-nolayer.png"
