@@ -26,9 +26,15 @@ WARNING: If you stop the training midway through it will likely leave all the us
 
 ## Convolutional Models
 
-There are few different convolutional models in this project. All of them are in the `trainSkinAI.py` file. First an overview of the rest of the code: At the top there are some parameters for `input_folder = "./preppedskins"` `output_folder = "./downloadedskins/skins"` you can find out more about theses in the (Dataset Section)[#dataset]. Then there are a few functions to load the dataset from the images in the folders and some code to setup TensorFlow.
+There are few different convolutional models in this project. All of them are in the `trainSkinAI.py` file. To run it you will need to install the following packages:
+- `tensorflow` (Make sure it is the correct version for CuDNN)
+- `numpy` (For math)
+- `PIL` (For image processing)
+
+First an overview of the rest of the code: At the top there are some parameters for `input_folder = "./preppedskins"` `output_folder = "./downloadedskins/skins"` you can find out more about theses in the (Dataset Section)[#dataset]. Then there are a few functions to load the dataset from the images in the folders and some code to setup TensorFlow.
 
 Everything after the `with tf.device("/GPU:0"), tf.distribute.OneDeviceStrategy("/GPU:0").scope():` are the models. There is an array `models` so I can test multiple at the same time.
+
 
 ### Model 1 - The Van Gogh Ultima
 
@@ -81,13 +87,13 @@ The dataset is a collection of 88,000 Minecraft Skins. I got them from [NameMC](
 
 After I had all the images they needed to be prepped for the models. The prepped images are only used for the convolutional networks because the diffusion model does it's own image prep. To prep the images I did a bunch of things, all in the `prepSkinFiles.py` file. To process the images it loops over all the images in the downloaded skins folder and do the following:
 1. Check if the image is 64x64 pixels. If it is not it gets deleted it because I don't want and old style skin files.
-2. Grab the alpha from it and merge it with a `skinmask.png` file. This is so the transparency gets kept from the original skin while removing things outside the skin.
+2. Grab the alpha  from it and merge it with a `skinmask.png` file. This is so the transparency gets kept from the original skin while removing things outside the skin.
 3. Expand the image into all of the transparent parts of the image. 
 Then here I split what to do between if it is generating multiple images or not. First the single image generation.
-1. Blur the image (this is why I needed to remove the transparent parts in step 3).
-2. Qantize the image to reduce the number of colors to a random number between 2 and 5.
-3. Add the transparency back to the image.
-4. Save the image as a PNG file in the `preppedskins` folder.
+3. Blur the image (this is why I needed to remove the transparent parts in step 3).
+4. Qantize the image to reduce the number of colors to a random number between 2 and 5.
+5. Add the transparency back to the image.
+6. Save the image as a PNG file in the `preppedskins` folder.
 
 For the multiple image generation I do a similar thing to the above:
 4. Loop over blur values of [0, 2, 4]
