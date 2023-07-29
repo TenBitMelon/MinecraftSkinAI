@@ -1,7 +1,7 @@
 from PIL import Image, ImageChops
 import os
 
-dataset_dir = "./downloadedskins"
+dataset_dir = "./downloadedskins/skins"
 alpha_mask_path = "./skinmask.png"
 
 alpha_mask = Image.open(alpha_mask_path).convert("L")
@@ -21,15 +21,21 @@ def process_image(filename):
         combined_alpha = ImageChops.darker(original_alpha, alpha_mask)
         image.putalpha(combined_alpha)
 
+        # Everywhere the alpha mask is black, make the image's pixel black too
+        for x in range(64):
+            for y in range(64):
+                if combined_alpha.getpixel((x, y)) == 0:
+                    image.putpixel((x, y), (0, 0, 0, 0))
+
         output_path = os.path.join(dataset_dir, filename)
         image.save(output_path)
 
         return 1
 
 image_files = os.listdir(dataset_dir)
-proccessed_images = 0
-for image_file in image_files:
-    process_image(image_file)
-    proccessed_images += 1
-    if proccessed_images % 1000 == 0:
-        print(f"Processed {proccessed_images} images")
+
+if __name__ == "__main__":
+    # Multiprocessing
+    from multiprocessing import Pool
+    with Pool(8) as p:
+        print(p.map(process_image, image_files))
