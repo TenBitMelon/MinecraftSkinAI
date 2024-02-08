@@ -1,16 +1,20 @@
 ![Skins Banner](readmeimages/skinsbanner.png)
 # Minecraft Skin AI
 
-This project generate a Minecraft Skins from thin air using AI magic.
-There are a few different models in this project, each with their own strengths and weaknesses. The best one is the diffusion model.
+This project generates Minecraft Skins from thin air using AI magic.
+There are a few different models in this project, each with their own strengths and weaknesses. 
+
+The best one is the diffusion model.
 
 ## Diffusion Model - Pollock
 
-Finally got this working, by just copy pasting without any modifcations. I originally tried to get transparency working with this model but I couldn't get it to run after that. So there is no transparency with this one.
+I originally tried to get transparency working with this model but I couldn't get it to run after that. So there is no transparency with this one.
 
-This model is based on [Diffusion Models | PyTorch](https://www.youtube.com/watch?v=TBCRlnwJtZU) [Github](https://github.com/dome272/Diffusion-Models-pytorch/tree/main). This is a diffusion model that generates images from noise. The model is trained on a dataset of about 90,000 Minecraft Skin images. If you want to know more about it check out the (Dataset Section)[#dataset]. This model was trained for 22 epochs for 10 days, with a batch size of 12 (I could have changed this number to make it go faster, I just didn't do any testing). It was trained on a 2080 Ti and took about 11 hours per epoch to train for all 90,000 images. It was trained using the Adam optimizer with the Mean Squared Error loss function. Overall the model has about a 0.0069 loss. It is the best model I have trained so far.
+This model is based on [Diffusion Models | PyTorch](https://www.youtube.com/watch?v=TBCRlnwJtZU) [Github](https://github.com/dome272/Diffusion-Models-pytorch/tree/main). Changes were made to the way images were input and proccessed. This is a diffusion model that generates images from noise and doesn't use any keyword inputs. The model is trained on a dataset of about 90,000 Minecraft Skin images. If you want to know more about it check out the (Dataset Section)[#dataset]. This model was trained for 22 epochs for 10 days, with a batch size of 12 (I could have changed this number to make it go faster, I just didn't do much testing because of how long it took). It was trained on a 2080 Ti and took about 11 hours per epoch to train for all 90,000 images. It was trained using the Adam optimizer with the Mean Squared Error loss function. Overall the model has about a 0.0069 loss. 
 
-The model and program is almost 1 to 1 from the GitHub in the `complexDiffusionModel.ipynb` file. To run it you will need to install the following packages:
+It is the best model I have trained so far.
+
+To run it you will need to install the following packages:
 - `torch` & `torchvision` (Make sure it is the correct version for CuDNN)
 - `tqdm` (For progress bars)`
 - `matplotlib` (For plotting)
@@ -20,6 +24,8 @@ The model and program is almost 1 to 1 from the GitHub in the `complexDiffusionM
 Here are some examples of the images it generates:
 ![Diffusion Example](readmeimages/pollock-21.jpg)
 ![Diffusion Example](readmeimages/pollock-22.jpg)
+
+Sometimes the image output is entirely black, this could be due to some issues with the preprocessing, but I couldn't find evidence of that. It is most likely because I fiddled with the layers too much.
 
 ## Diffusion Model - The La Grande Jatte
 
